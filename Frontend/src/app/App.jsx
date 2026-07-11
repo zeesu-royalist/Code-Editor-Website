@@ -1,9 +1,9 @@
 import './App.css'
-import { Editor } from "@monaco-editor/react"
+import { Editor } from '@monaco-editor/react'
 import { useRef, useMemo, useState, useEffect } from 'react'
-import { MonacoBinding } from "y-monaco"
-import { SocketIOProvider } from "y-socket.io"
-import * as Y from "yjs"
+import { MonacoBinding } from 'y-monaco'
+import * as Y from 'yjs'
+import { createRealtimeProvider } from './realtime'
 
 /* ────────────────────────────────────────────────
    Small inline icon set (kept dependency-free)
@@ -186,15 +186,16 @@ function TreeNode({ node, depth, expanded, toggle, selectedId, onSelectFile }) {
 }
 
 function App() {
-  const eidtorRef = useRef(null)
+  const editorRef = useRef(null)
   const providerRef = useRef(null)
   const bindingRef = useRef(null)
   const handleBeforeUnloadRef = useRef(null)
 
   const [username, setUsername] = useState(() => {
-    return new URLSearchParams(window.location.search).get("username") || ""
+    return new URLSearchParams(window.location.search).get('username') || ''
   })
   const [users, setUsers] = useState([])
+  const [connectionError, setConnectionError] = useState('')
 
   // ── VS Code shell chrome state ──
   const [activityView, setActivityView] = useState('explorer')
@@ -211,51 +212,65 @@ function App() {
   useEffect(() => {
     return () => {
       bindingRef.current?.destroy()
-      providerRef.current?.disconnect()
+      providerRef.current?.destroy()
+
       if (handleBeforeUnloadRef.current) {
-        window.removeEventListener("beforeunload", handleBeforeUnloadRef.current)
+        window.removeEventListener('beforeunload', handleBeforeUnloadRef.current)
       }
+
       ydoc.destroy()
     }
   }, [ydoc])
 
   const handleMount = (editor) => {
-    eidtorRef.current = editor
+    editorRef.current = editor
 
     bindingRef.current?.destroy()
-    providerRef.current?.disconnect()
+    providerRef.current?.destroy()
+
     if (handleBeforeUnloadRef.current) {
-      window.removeEventListener("beforeunload", handleBeforeUnloadRef.current)
+      window.removeEventListener('beforeunload', handleBeforeUnloadRef.current)
     }
 
-    const provider = new SocketIOProvider("/", "monaco", ydoc, {
-      autoConnect: true,
-    })
+    const provider = createRealtimeProvider(ydoc, { username })
+
+    if (!provider) {
+      setConnectionError(
+        'Realtime collaboration is unavailable because VITE_SOCKET_URL is not configured. Add the Render backend URL to your frontend environment.'
+      )
+      return
+    }
+
     providerRef.current = provider
 
-    provider.awareness.setLocalStateField("user", { username })
-
-    const states = Array.from(provider.awareness.getStates().values())
-    setUsers(states.filter(state => state.user && state.user.username).map(state => state.user))
-
-    provider.awareness.on("change", () => {
+    const handleAwarenessChange = () => {
       const states = Array.from(provider.awareness.getStates().values())
-      setUsers(states.filter(state => state.user && state.user.username).map(state => state.user))
-    })
+      const participants = states
+        .filter((state) => state.user && state.user.username)
+        .map((state) => state.user)
+
+      setUsers(participants)
+    }
+
+    provider.awareness.on('change', handleAwarenessChange)
+    handleAwarenessChange()
 
     function handleBeforeUnload() {
-      provider.awareness.setLocalStateField("user", null)
+      provider.awareness.setLocalStateField('user', null)
     }
+
     handleBeforeUnloadRef.current = handleBeforeUnload
-    window.addEventListener("beforeunload", handleBeforeUnload)
+    window.addEventListener('beforeunload', handleBeforeUnload)
 
     const monacoBinding = new MonacoBinding(
       yText,
-      eidtorRef.current.getModel(),
-      new Set([eidtorRef.current]),
+      editorRef.current.getModel(),
+      new Set([editorRef.current]),
       provider.awareness
     )
+
     bindingRef.current = monacoBinding
+    setConnectionError('')
   }
 
   const handleJoin = (e) => {
@@ -566,6 +581,21 @@ function App() {
             <span className="crumb-sep">›</span>
             <span className="crumb-current">{activeTab?.name || 'main.js'}</span>
           </div>
+
+          {connectionError ? (
+            <div
+              role="status"
+              style={{
+                padding: '10px 12px',
+                background: '#3b1f1f',
+                color: '#ffd8d8',
+                borderBottom: '1px solid rgba(255,255,255,0.12)',
+                fontSize: 12,
+              }}
+            >
+              {connectionError}
+            </div>
+          ) : null}
 
           <div className="editor-container">
             <Editor

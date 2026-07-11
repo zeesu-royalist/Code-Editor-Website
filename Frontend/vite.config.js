@@ -8,13 +8,6 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5173,
     strictPort: false,
-    proxy: {
-      '/socket.io': {
-        target: 'https://code-editor-website-sand.vercel.app/',
-        ws: true,
-        changeOrigin: true,
-      },
-    },
   },
   preview: {
     host: '0.0.0.0',
