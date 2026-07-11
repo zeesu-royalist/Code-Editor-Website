@@ -10,7 +10,7 @@ const httpServer = createServer(app);
 
 const io = new Server(httpServer, {
     cors: {
-        origin: "*",
+        origin: "https://code-editor-website-z6n6.vercel.app/",
         methods: ["GET", "POST"]
     }
 })
