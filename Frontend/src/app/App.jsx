@@ -129,7 +129,35 @@ const FILE_TREE = [
   { type: 'file', name: 'README.md', id: 'readme.md', lang: 'md' },
 ]
 
+const ROOM_ID = 'monaco'
+const STORAGE_KEY = `editor-room-${ROOM_ID}`
+
 const AVATAR_COLORS = ["#4fc3d9", "#e2a05f", "#89d185", "#c586c0", "#3794ff", "#f14c4c", "#cca700", "#5ec9f8"]
+
+function readStoredEditorContent() {
+  if (typeof window === 'undefined') {
+    return ''
+  }
+
+  try {
+    return window.localStorage.getItem(STORAGE_KEY) || ''
+  } catch (error) {
+    console.warn('[Storage] Unable to read the local editor snapshot.', error)
+    return ''
+  }
+}
+
+function writeStoredEditorContent(content) {
+  if (typeof window === 'undefined' || !content) {
+    return
+  }
+
+  try {
+    window.localStorage.setItem(STORAGE_KEY, content)
+  } catch (error) {
+    console.warn('[Storage] Unable to save the local editor snapshot.', error)
+  }
+}
 
 function getAvatarColor(name) {
   let hash = 0
@@ -190,6 +218,8 @@ function App() {
   const providerRef = useRef(null)
   const bindingRef = useRef(null)
   const handleBeforeUnloadRef = useRef(null)
+  const saveTimeoutRef = useRef(null)
+  const storageRestoreCompleteRef = useRef(false)
 
   const [username, setUsername] = useState(() => {
     return new URLSearchParams(window.location.search).get('username') || ''
@@ -207,7 +237,43 @@ function App() {
   const [activeTabId, setActiveTabId] = useState('main.js')
 
   const ydoc = useMemo(() => new Y.Doc(), [])
-  const yText = useMemo(() => ydoc.getText("monaco"), [ydoc])
+  const yText = useMemo(() => ydoc.getText(ROOM_ID), [ydoc])
+
+  // Persist the collaborative document snapshot in the browser cache with a small debounce.
+  // This keeps refreshes resilient without changing the realtime socket contract.
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined
+    }
+
+    const persistYDocToStorage = () => {
+      const content = yText.toString()
+
+      if (!content) {
+        return
+      }
+
+      writeStoredEditorContent(content)
+    }
+
+    const handleYDocUpdate = () => {
+      if (saveTimeoutRef.current) {
+        window.clearTimeout(saveTimeoutRef.current)
+      }
+
+      saveTimeoutRef.current = window.setTimeout(persistYDocToStorage, 400)
+    }
+
+    ydoc.on('update', handleYDocUpdate)
+
+    return () => {
+      ydoc.off('update', handleYDocUpdate)
+
+      if (saveTimeoutRef.current) {
+        window.clearTimeout(saveTimeoutRef.current)
+      }
+    }
+  }, [ydoc, yText])
 
   useEffect(() => {
     return () => {
@@ -216,6 +282,10 @@ function App() {
 
       if (handleBeforeUnloadRef.current) {
         window.removeEventListener('beforeunload', handleBeforeUnloadRef.current)
+      }
+
+      if (saveTimeoutRef.current) {
+        window.clearTimeout(saveTimeoutRef.current)
       }
 
       ydoc.destroy()
@@ -230,6 +300,18 @@ function App() {
 
     if (handleBeforeUnloadRef.current) {
       window.removeEventListener('beforeunload', handleBeforeUnloadRef.current)
+    }
+
+    // Restore the room-scoped browser snapshot only once, before the Yjs binding starts.
+    // This prevents a refresh from wiping the document while keeping the collaborative sync flow intact.
+    if (!storageRestoreCompleteRef.current) {
+      const savedContent = readStoredEditorContent()
+
+      if (savedContent && yText.toString().length === 0) {
+        yText.insert(0, savedContent)
+      }
+
+      storageRestoreCompleteRef.current = true
     }
 
     const provider = createRealtimeProvider(ydoc, { username })
