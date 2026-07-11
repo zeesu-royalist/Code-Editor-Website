@@ -2,7 +2,8 @@ import { SocketIOProvider } from 'y-socket.io'
 
 const SOCKET_ROOM = 'monaco'
 const SOCKET_IO_OPTIONS = {
-  transports: ['websocket', 'polling'],
+  path: '/socket.io',
+  transports: ['polling', 'websocket'],
   reconnection: true,
   reconnectionAttempts: Infinity,
   reconnectionDelay: 1000,

@@ -6,15 +6,26 @@ import { YSocketIO } from 'y-socket.io/dist/server'
 const app = express()
 const httpServer = createServer(app)
 
-const allowedOrigins = [
-  process.env.FRONTEND_ORIGIN,
-  'http://localhost:5173',
-].filter(Boolean)
+const configuredOrigins = (process.env.FRONTEND_ORIGIN || '')
+  .split(',')
+  .map((value) => value.trim())
+  .filter(Boolean)
+
+const localhostOriginPattern = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i
+const allowedOrigins = Array.from(
+  new Set([
+    ...configuredOrigins,
+    'http://localhost:5173',
+    'http://localhost:4173',
+    'http://127.0.0.1:5173',
+    'http://127.0.0.1:4173',
+  ])
+)
 
 const io = new Server(httpServer, {
   cors: {
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (!origin || allowedOrigins.includes(origin) || localhostOriginPattern.test(origin)) {
         callback(null, true)
         return
       }
@@ -23,8 +34,8 @@ const io = new Server(httpServer, {
       callback(new Error('Origin not allowed by CORS'))
     },
     credentials: true,
-    methods: ['GET', 'POST'],
-    allowedHeaders: ['Content-Type'],
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   },
   transports: ['websocket', 'polling'],
   allowEIO3: true,
