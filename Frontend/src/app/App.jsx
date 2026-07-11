@@ -423,7 +423,7 @@ function App() {
 
             <div className="join-divider" />
 
-            <div className="join-eyebrow">COLLABORATIVE EDITOR</div>
+            <div className="join-eyebrow">ZEESU ROYALIST</div>
             <h1 className="join-title">Join the workspace</h1>
             <p className="join-subtitle">Enter a display name to open the editor and start pairing with your team in real time.</p>
 
@@ -729,11 +729,12 @@ function App() {
               {panelTab === 'terminal' && (
                 <>
                   <div className="terminal-line">
-                    <span className="terminal-prompt">➜</span> <span className="terminal-path">codesync</span> git:(main) npm run dev
+                    <span className="terminal-prompt">➜</span> <span className="terminal-path">codesync</span> git:(main) npm run dev 
                   </div>
                   <div className="terminal-line">VITE ready in 341 ms</div>
+                  <div className="terminal-line">Build by <a href='https://www.google.com/search?q=zeesu+royalist'>Zeesu Royalist</a></div>
                   <div className="terminal-line">➜ Local: http://localhost:5173/</div>
-                  <div className="terminal-line">➜ Network: use --host to expose</div>
+                  <div className="terminal-line">➜ Network: use --host to expose --zeesu_royalist</div>
                   <div className="terminal-line"><span className="terminal-cursor" /></div>
                 </>
               )}
