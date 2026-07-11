@@ -394,16 +394,19 @@ function App() {
         {/* Activity Bar */}
         <nav className="activitybar">
           <div className="activitybar-icons">
-            {ACTIVITY_ITEMS.slice(0, 5).map(({ id, label, icon: ItemIcon }) => (
-              <button
-                key={id}
-                className={`activity-item ${activityView === id && !sidebarCollapsed ? 'active' : ''}`}
-                title={label}
-                onClick={() => handleActivityClick(id)}
-              >
-                <ItemIcon />
-              </button>
-            ))}
+            {ACTIVITY_ITEMS.slice(0, 5).map((item) => {
+              const ItemIcon = item.icon
+              return (
+                <button
+                  key={item.id}
+                  className={`activity-item ${activityView === item.id && !sidebarCollapsed ? 'active' : ''}`}
+                  title={item.label}
+                  onClick={() => handleActivityClick(item.id)}
+                >
+                  <ItemIcon />
+                </button>
+              )
+            })}
           </div>
           <div className="activitybar-spacer" />
           <div className="activitybar-icons">
