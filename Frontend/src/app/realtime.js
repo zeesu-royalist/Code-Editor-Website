@@ -18,7 +18,7 @@ export function getSocketUrl() {
 
   if (!socketUrl) {
     console.error(
-      '[CodeSync] Missing VITE_SOCKET_URL. Set it to your Render backend URL before starting the frontend.'
+      '[ZeesCode] Missing VITE_SOCKET_URL. Set it to your Render backend URL before starting the frontend.'
     )
     return ''
   }
@@ -48,47 +48,47 @@ export function createRealtimeProvider(ydoc, { username = '' } = {}) {
     const [payload] = statusPayload || []
 
     if (payload?.status === 'connecting') {
-      console.log('[CodeSync] Realtime connection is reconnecting…')
+      console.log('[ZeesCode] Realtime connection is reconnecting…')
     }
 
     if (payload?.status === 'connected') {
-      console.log('[CodeSync] Realtime connection established.')
+      console.log('[ZeesCode] Realtime connection established.')
     }
 
     if (payload?.status === 'disconnected') {
-      console.log('[CodeSync] Realtime connection disconnected.')
+      console.log('[ZeesCode] Realtime connection disconnected.')
     }
   })
 
   provider.on('synced', ([synced]) => {
     if (synced) {
-      console.log('[CodeSync] Realtime synchronization completed.')
+      console.log('[ZeesCode] Realtime synchronization completed.')
     }
   })
 
   provider.socket.on('connect', () => {
-    console.log('[CodeSync] Client connected to collaborative room:', SOCKET_ROOM)
+    console.log('[ZeesCode] Client connected to collaborative room:', SOCKET_ROOM)
     provider.awareness.setLocalStateField('user', { username })
   })
 
   provider.socket.on('disconnect', (reason) => {
-    console.warn('[CodeSync] Client disconnected from collaborative room:', reason)
+    console.warn('[ZeesCode] Client disconnected from collaborative room:', reason)
   })
 
   provider.socket.on('connect_error', (error) => {
-    console.error('[CodeSync] Socket connection error:', error)
+    console.error('[ZeesCode] Socket connection error:', error)
   })
 
   provider.socket.on('reconnect_attempt', (attempt) => {
-    console.log('[CodeSync] Attempting realtime reconnect:', attempt)
+    console.log('[ZeesCode] Attempting realtime reconnect:', attempt)
   })
 
   provider.socket.on('reconnect_failed', () => {
-    console.error('[CodeSync] Realtime reconnect failed. The Render backend may be unavailable.')
+    console.error('[ZeesCode] Realtime reconnect failed. The Render backend may be unavailable.')
   })
 
   provider.socket.on('error', (error) => {
-    console.error('[CodeSync] Socket transport error:', error)
+    console.error('[ZeesCode] Socket transport error:', error)
   })
 
   return provider
