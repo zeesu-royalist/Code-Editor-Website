@@ -44,6 +44,15 @@ export function createRealtimeProvider(ydoc, { username = '' } = {}) {
     SOCKET_IO_OPTIONS
   )
 
+  const applyLocalUser = () => {
+    if (username && provider?.awareness) {
+      provider.awareness.setLocalStateField('user', { username })
+    }
+  }
+
+  // Set local awareness state immediately
+  applyLocalUser()
+
   provider.on('status', (statusPayload) => {
     const [payload] = statusPayload || []
 
@@ -53,6 +62,7 @@ export function createRealtimeProvider(ydoc, { username = '' } = {}) {
 
     if (payload?.status === 'connected') {
       console.log('[ZeesCode] Realtime connection established.')
+      applyLocalUser()
     }
 
     if (payload?.status === 'disconnected') {
@@ -63,13 +73,18 @@ export function createRealtimeProvider(ydoc, { username = '' } = {}) {
   provider.on('synced', ([synced]) => {
     if (synced) {
       console.log('[ZeesCode] Realtime synchronization completed.')
+      applyLocalUser()
     }
   })
 
   provider.socket.on('connect', () => {
     console.log('[ZeesCode] Client connected to collaborative room:', SOCKET_ROOM)
-    provider.awareness.setLocalStateField('user', { username })
+    applyLocalUser()
   })
+
+  if (provider.socket.connected) {
+    applyLocalUser()
+  }
 
   provider.socket.on('disconnect', (reason) => {
     console.warn('[ZeesCode] Client disconnected from collaborative room:', reason)
@@ -92,4 +107,10 @@ export function createRealtimeProvider(ydoc, { username = '' } = {}) {
   })
 
   return provider
+}
+
+export function updateAwarenessUser(provider, username) {
+  if (provider?.awareness && username) {
+    provider.awareness.setLocalStateField('user', { username })
+  }
 }

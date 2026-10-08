@@ -1,10 +1,10 @@
 import './App.css'
 import { Editor } from '@monaco-editor/react'
-import { LogOut, Menu, X } from "lucide-react";
+import { LogOut, Menu, X, Phone, Mail, MessageSquare, ArrowUpRight } from "lucide-react";
 import { useRef, useMemo, useState, useEffect } from 'react'
 import { MonacoBinding } from 'y-monaco'
 import * as Y from 'yjs'
-import { createRealtimeProvider } from './realtime'
+import { createRealtimeProvider, updateAwarenessUser } from './realtime'
 
 /* ────────────────────────────────────────────────
    Inline Custom SVG Icons for Design System
@@ -238,70 +238,210 @@ const Icon = {
   ),
 }
 
-/* Muted Partner Logos Component Items */
-const LOGO_ITEMS = [
+/* ────────────────────────────────────────────────
+   Marketeam Hero Section Data & Custom Hooks
+──────────────────────────────────────────────── */
+function useCountUp(endValue = 20, duration = 2000, delay = 1200) {
+  const [count, setCount] = useState(0)
+
+  useEffect(() => {
+    let animationFrameId
+    let startTimestamp = null
+    const timerId = setTimeout(() => {
+      const step = (timestamp) => {
+        if (!startTimestamp) startTimestamp = timestamp
+        const progress = Math.min((timestamp - startTimestamp) / duration, 1)
+        const easedProgress = 1 - Math.pow(1 - progress, 3)
+        const currentVal = Math.floor(easedProgress * endValue)
+        setCount(currentVal)
+
+        if (progress < 1) {
+          animationFrameId = requestAnimationFrame(step)
+        } else {
+          setCount(endValue)
+        }
+      }
+      animationFrameId = requestAnimationFrame(step)
+    }, delay)
+
+    return () => {
+      clearTimeout(timerId)
+      if (animationFrameId) cancelAnimationFrame(animationFrameId)
+    }
+  }, [endValue, duration, delay])
+
+  return count
+}
+
+function TypewriterHeading({
+  text = "Real-Time Collaborative Code Editor for Dev Teams, Code on One Shared Codebase Live",
+  darkCharCount = 53,
+  typingSpeed = 35,
+  startDelay = 400,
+}) {
+  const [displayedCount, setDisplayedCount] = useState(0)
+  const [isDone, setIsDone] = useState(false)
+
+  useEffect(() => {
+    let intervalId
+    const timeoutId = setTimeout(() => {
+      intervalId = setInterval(() => {
+        setDisplayedCount((prev) => {
+          if (prev < text.length) {
+            return prev + 1
+          } else {
+            clearInterval(intervalId)
+            setIsDone(true)
+            return prev
+          }
+        })
+      }, typingSpeed)
+    }, startDelay)
+
+    return () => {
+      clearTimeout(timeoutId)
+      if (intervalId) clearInterval(intervalId)
+    }
+  }, [text, typingSpeed, startDelay])
+
+  const darkPart = text.slice(0, Math.min(displayedCount, darkCharCount))
+  const lightPart = displayedCount > darkCharCount ? text.slice(darkCharCount, displayedCount) : ""
+
+  return (
+    <h1 className="marketeam-hero-heading">
+      <span className="heading-dark-text">{darkPart}</span>
+      <span className="heading-light-text">{lightPart}</span>
+      <span className={`typewriter-cursor ${isDone ? "is-complete" : ""}`} />
+    </h1>
+  )
+}
+
+const ORBIT_AVATARS = [
+  // Orbit 1 (diameter 353px, radius 176.5px, angle 270deg)
   {
-    id: 1, label: 'Dreamure', icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-      </svg>
-    )
+    orbit: 1,
+    angle: 270,
+    radius: 176.5,
+    size: 58,
+    isSquare: true,
+    borderRadius: '20px',
+    glow: 'rgba(160, 104, 255, 0.85)',
+    delay: '0.6s',
+    src: 'https://zeesuroyalist.weebly.com/uploads/1/3/2/0/132055210/08c46336-6469-4f04-a253-b65a25dd62b6_orig.jpeg',
   },
-  { id: 2, label: 'SWITCH.WIn', icon: null, isFont: true },
+  // Orbit 2 (diameter 501px, radius 250.5px)
   {
-    id: 3, label: 'Glow sphere', icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <circle cx="6" cy="6" r="3" /><circle cx="18" cy="6" r="3" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="18" r="3" />
-      </svg>
-    )
+    orbit: 2,
+    angle: 60,
+    radius: 250.5,
+    size: 58,
+    isSquare: false,
+    borderRadius: '50%',
+    glow: 'rgba(250, 204, 21, 0.85)',
+    delay: '0.8s',
+    src: 'https://res.cloudinary.com/qtxwjzre/image/upload/v1784094320/card2_ma97sy.jpg',
   },
   {
-    id: 4, label: 'PinSpace', icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" />
-      </svg>
-    )
+    orbit: 2,
+    angle: 180,
+    radius: 250.5,
+    size: 78,
+    isSquare: false,
+    borderRadius: '50%',
+    glow: 'rgba(244, 114, 182, 0.85)',
+    delay: '1.0s',
+    src: 'https://res.cloudinary.com/qtxwjzre/image/upload/v1784094319/1778755271207_fncykm.jpg',
   },
   {
-    id: 5, label: 'Visionix', icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-      </svg>
-    )
+    orbit: 2,
+    angle: 300,
+    radius: 250.5,
+    size: 58,
+    isSquare: true,
+    borderRadius: '20px',
+    glow: 'rgba(56, 189, 248, 0.85)',
+    delay: '1.2s',
+    src: 'https://res.cloudinary.com/qtxwjzre/image/upload/v1784094321/card3_thiwgl.jpg',
+  },
+  // Orbit 3 (diameter 649px, radius 324.5px)
+  {
+    orbit: 3,
+    angle: 130,
+    radius: 324.5,
+    size: 88,
+    isSquare: false,
+    borderRadius: '50%',
+    glow: 'rgba(236, 72, 153, 0.85)',
+    delay: '1.5s',
+    src: 'https://res.cloudinary.com/qtxwjzre/image/upload/v1784094320/card44_nkenif.jpg',
+  },
+  // Orbit 4 (diameter 797px, radius 398.5px)
+  {
+    orbit: 4,
+    angle: 30,
+    radius: 398.5,
+    size: 58,
+    isSquare: false,
+    borderRadius: '50%',
+    glow: 'rgba(160, 104, 255, 0.85)',
+    delay: '1.7s',
+    src: 'https://zeesuroyalist.weebly.com/uploads/1/3/2/0/132055210/08c46336-6469-4f04-a253-b65a25dd62b6_orig.jpeg',
   },
   {
-    id: 6, label: 'CodeCraft', icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" />
-      </svg>
-    )
+    orbit: 4,
+    angle: 95,
+    radius: 398.5,
+    size: 88,
+    isSquare: true,
+    borderRadius: '24px',
+    glow: 'rgba(251, 146, 60, 0.85)',
+    delay: '1.9s',
+    src: 'https://res.cloudinary.com/qtxwjzre/image/upload/v1784094320/card2_ma97sy.jpg',
   },
   {
-    id: 7, label: 'DevPulse', icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-      </svg>
-    )
+    orbit: 4,
+    angle: 220,
+    radius: 398.5,
+    size: 88,
+    isSquare: true,
+    borderRadius: '24px',
+    glow: 'rgba(244, 63, 94, 0.85)',
+    delay: '2.1s',
+    src: 'https://res.cloudinary.com/qtxwjzre/image/upload/v1784094319/1778755271207_fncykm.jpg',
   },
   {
-    id: 8, label: 'SyncNode', icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <circle cx="12" cy="12" r="9" /><path d="M12 3v18" />
-      </svg>
-    )
+    orbit: 4,
+    angle: 320,
+    radius: 398.5,
+    size: 58,
+    isSquare: false,
+    borderRadius: '50%',
+    glow: 'rgba(160, 104, 255, 0.85)',
+    delay: '2.3s',
+    src: 'https://res.cloudinary.com/qtxwjzre/image/upload/v1784094321/card3_thiwgl.jpg',
   },
 ]
 
-function MarqueePartnerLogos() {
+const TICKER_LOGOS = [
+  'https://polo-pecan-73837341.figma.site/_assets/v11/1e7b0e6fcc016cd28aec5c68990118b8c54c35a5.svg',
+  'https://polo-pecan-73837341.figma.site/_assets/v11/3eac03c183db2ae080d910159211c14843398b61.svg',
+  'https://polo-pecan-73837341.figma.site/_assets/v11/17705a4c0023a0e5a99154dfb10582adbbf4260b.svg',
+  'https://polo-pecan-73837341.figma.site/_assets/v11/0e5f442b09dc5c248e3e60d40a65505fb1887228.svg',
+  'https://polo-pecan-73837341.figma.site/_assets/v11/63f99030ceb459e3c9ab9e429cfa2353491d3816.svg',
+]
+
+function MarketeamLogoTicker() {
+  const quadLogos = [...TICKER_LOGOS, ...TICKER_LOGOS, ...TICKER_LOGOS, ...TICKER_LOGOS]
   return (
-    <div className="partners-marquee-container">
-      <div className="marquee-track">
-        {[...LOGO_ITEMS, ...LOGO_ITEMS, ...LOGO_ITEMS].map((item, idx) => (
-          <div key={idx} className="partner-logo-item">
-            {item.icon}
-            <span className={item.isFont ? "font-mono font-bold tracking-tighter" : ""}>{item.label}</span>
-          </div>
-        ))}
+    <div className="marketeam-ticker-strip">
+      <div className="ticker-fade-mask">
+        <div className="ticker-inner-track">
+          {quadLogos.map((src, idx) => (
+            <div key={idx} className="ticker-logo-item">
+              <img src={src} alt={`Partner Logo ${idx + 1}`} className="ticker-logo-img" />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   )
@@ -421,20 +561,35 @@ function App() {
 
   // Username State
   const [username, setUsername] = useState(() => {
-    return new URLSearchParams(window.location.search).get('username') || ''
+    if (typeof window === 'undefined') return ''
+    const urlUser = new URLSearchParams(window.location.search).get('username')
+    if (urlUser) return urlUser
+    try {
+      return localStorage.getItem('zeecode_username') || ''
+    } catch {
+      return ''
+    }
   })
-  const [nameInput, setNameInput] = useState('')
+  const [nameInput, setNameInput] = useState(() => {
+    if (typeof window === 'undefined') return ''
+    try {
+      return localStorage.getItem('zeecode_username') || ''
+    } catch {
+      return ''
+    }
+  })
   const [nameError, setNameError] = useState('')
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [showJoinModal, setShowJoinModal] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [newsletterEmail, setNewsletterEmail] = useState('')
 
   // Editor cursor position tracking (Ln X, Col Y)
   const [cursorPos, setCursorPos] = useState({ line: 1, col: 1 })
 
   // Realtime & Workspace state
-  const [users, setUsers] = useState([])
+  const [users, setUsers] = useState(() => (username ? [{ username }] : []))
   const [connectionError, setConnectionError] = useState('')
   const [activityView, setActivityView] = useState('explorer')
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true)
@@ -452,6 +607,23 @@ function App() {
       setSidebarCollapsed(false)
     }
   }, [])
+
+  // Keep users array and awareness updated whenever username changes
+  useEffect(() => {
+    if (!username) {
+      setUsers([])
+      return
+    }
+
+    setUsers((prev) => {
+      if (prev.some((u) => u.username === username)) return prev
+      return [{ username }, ...prev]
+    })
+
+    if (providerRef.current?.awareness) {
+      updateAwarenessUser(providerRef.current, username)
+    }
+  }, [username])
 
   // Execution terminal output lines
   const [consoleLogs, setConsoleLogs] = useState([
@@ -529,6 +701,9 @@ function App() {
       setConnectionError(
         'Realtime collaboration is offline because VITE_SOCKET_URL is not configured.'
       )
+      if (username) {
+        setUsers([{ username }])
+      }
       return
     }
 
@@ -536,9 +711,13 @@ function App() {
 
     const handleAwarenessChange = () => {
       const states = Array.from(provider.awareness.getStates().values())
-      const participants = states
+      let participants = states
         .filter((state) => state.user && state.user.username)
         .map((state) => state.user)
+
+      if (username && !participants.some((u) => u.username === username)) {
+        participants = [{ username }, ...participants]
+      }
       setUsers(participants)
     }
 
@@ -571,12 +750,37 @@ function App() {
     setNameError('')
     setIsTransitioning(true)
 
+    try {
+      localStorage.setItem('zeecode_username', trimmed)
+    } catch (err) {
+      console.warn('Unable to persist username', err)
+    }
+
     setTimeout(() => {
       setUsername(trimmed)
+      setUsers((prev) => {
+        if (prev.some((u) => u.username === trimmed)) return prev
+        return [{ username: trimmed }, ...prev]
+      })
       window.history.pushState({}, "", "?username=" + encodeURIComponent(trimmed))
       setIsTransitioning(false)
       setShowJoinModal(false)
     }, 300)
+  }
+
+  const handleLogout = (e) => {
+    if (e) e.preventDefault()
+    try {
+      localStorage.removeItem('zeecode_username')
+    } catch (err) {
+      console.warn('Unable to clear username', err)
+    }
+    if (providerRef.current?.awareness) {
+      providerRef.current.awareness.setLocalStateField('user', null)
+    }
+    setUsername('')
+    setUsers([])
+    window.history.pushState({}, "", window.location.pathname)
   }
 
   const openModal = () => {
@@ -689,114 +893,257 @@ function App() {
           </div>
         )}
 
-        {/* Top Navbar */}
-        <header className="landing-nav">
-          <div className="nav-brand">
-            <Icon.BrandLogo />
-            <span className="brand-title">ZeesCode</span>
-          </div>
+        {/* Marketeam Top Viewport Hero Section */}
+        <div className="marketeam-hero-root">
+          {/* Header */}
+          <header className="marketeam-header">
+            <div className="marketeam-header-left">
+              <a href="/" className="marketeam-logo-link" aria-label="ZeesCode Home">
+                <Icon.BrandLogo width="26" height="26" />
+                <span className="marketeam-brand-name">ZeesCode</span>
+              </a>
+              <nav className="marketeam-nav-links">
+                <a href="#features" className="marketeam-nav-link" onClick={() => setMobileMenuOpen(false)}>Features</a>
+                <a href="#demo" className="marketeam-nav-link" onClick={() => setMobileMenuOpen(false)}>Live Demo</a>
+                <a href="#how-it-works" className="marketeam-nav-link" onClick={() => setMobileMenuOpen(false)}>Workflow</a>
+                <a href="#pricing" className="marketeam-nav-link" onClick={() => setMobileMenuOpen(false)}>Pricing</a>
+              </nav>
+            </div>
 
-          <nav className={`nav-links ${mobileMenuOpen ? 'mobile-open' : ''}`}>
-            <a href="#features" className="nav-link" onClick={() => setMobileMenuOpen(false)}>Features</a>
-            <a href="#how-it-works" className="nav-link" onClick={() => setMobileMenuOpen(false)}>How it works</a>
-            <a href="#demo" className="nav-link" onClick={() => setMobileMenuOpen(false)}>Live Demo</a>
-            <a href="#pricing" className="nav-link" onClick={() => setMobileMenuOpen(false)}>Pricing</a>
-            <div className="mobile-menu-actions">
-              <button className="nav-login-link" onClick={openModal}>Log In</button>
-              <button className="black-pill-btn join-btn" onClick={openModal}>
-                Join Now
+            <div className="marketeam-header-right">
+              <button className="marketeam-login-link desktop-only" onClick={openModal}>
+                Log In
+              </button>
+              <div className="btn-border-wrap desktop-only">
+                <button className="btn-join-now" onClick={openModal}>
+                  Join Now
+                </button>
+              </div>
+              <button
+                className="mobile-hamburger-btn"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                aria-label="Toggle Navigation Menu"
+              >
+                {mobileMenuOpen ? <X className="w-6 h-6 text-white" /> : <Menu className="w-6 h-6 text-white" />}
               </button>
             </div>
-          </nav>
+          </header>
 
-          <div className="nav-right">
-            <button className="nav-login-link desktop-only" onClick={openModal}>Log In</button>
-            <button className="black-pill-btn join-btn desktop-only" onClick={openModal}>
-              Join Now
-            </button>
-            <button className="mobile-hamburger-btn" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-              {mobileMenuOpen ? <X className="w-6 h-6 text-white" /> : <Menu className="w-6 h-6 text-white" />}
-            </button>
-          </div>
-        </header>
-
-        {/* Hero Section */}
-        <section className="hero-container">
-          {/* Left Column: Headline & CTA */}
-          <div className="hero-left">
-            <h1 className="hero-headline">
-              <span className="headline-dark">
-                Unlock Top <br className="desktop-br" />
-                Coding Talent <br className="desktop-br" />
-                You Thought Was <br className="desktop-br" />
-                Out of Reach –
-              </span>{' '}
-              <span className="headline-white">
-                Now Just One <br className="desktop-br" />
-                Click Away!
-              </span>
-            </h1>
-
-            <div className="hero-cta-wrapper">
-              <button className="black-pill-btn start-project-btn" onClick={openModal}>
-                <span>Start Coding</span>
-                <Icon.ArrowRight />
-              </button>
-            </div>
-          </div>
-
-          {/* Right Column: Orbit Visualization */}
-          <div className="hero-right">
-            <div className="orbit-system">
-              {/* Concentric Orbit Rings */}
-              <div className="orbit-ring ring-1"></div>
-              <div className="orbit-ring ring-2"></div>
-              <div className="orbit-ring ring-3"></div>
-
-              {/* Central Stat Badge */}
-              <div className="center-stat">
-                <div className="stat-number">20k+</div>
-                <div className="stat-label">Developers</div>
-              </div>
-
-              {/* Orbit Avatars with Soft Color Rings */}
-              <div className="orbit-node avatar-node avatar-1" title="Senior Developer Profile">
-                <img src="https://res.cloudinary.com/qtxwjzre/image/upload/v1784094320/card2_ma97sy.jpg" alt="Avatar" />
-              </div>
-              <div className="orbit-node avatar-node avatar-2" title="Fullstack Specialist">
-                <img src="https://res.cloudinary.com/qtxwjzre/image/upload/v1784094319/1778755271207_fncykm.jpg" alt="Avatar" />
-              </div>
-              <div className="orbit-node avatar-node avatar-3" title="DevOps Lead">
-                <img src="https://res.cloudinary.com/qtxwjzre/image/upload/v1784094321/card3_thiwgl.jpg" alt="Avatar" />
-              </div>
-              <div className="orbit-node avatar-node avatar-4" title="Frontend Specialist">
-                <img src="https://res.cloudinary.com/qtxwjzre/image/upload/v1784094320/card44_nkenif.jpg" alt="Avatar" />
-              </div>
-              <div className="orbit-node avatar-node avatar-5" title="Backend Architect">
-                <img src="https://zeesuroyalist.weebly.com/uploads/1/3/2/0/132055210/08c46336-6469-4f04-a253-b65a25dd62b6_orig.jpeg" alt="Avatar" />
-              </div>
-
-              {/* Orbit Icon Badges with Colored Glows */}
-              <div className="orbit-node badge-node badge-bell">
-                <Icon.BellGlow />
-              </div>
-              <div className="orbit-node badge-node badge-team">
-                <Icon.TeamGlow />
-              </div>
-              <div className="orbit-node badge-node badge-chat">
-                <Icon.ChatGlow />
-              </div>
-              <div className="orbit-node badge-node badge-megaphone">
-                <Icon.MegaphoneGlow />
+          {/* Mobile Drawer Menu */}
+          {mobileMenuOpen && (
+            <div className="marketeam-mobile-drawer">
+              <a href="#features" className="mobile-nav-item" onClick={() => setMobileMenuOpen(false)}>Features</a>
+              <a href="#demo" className="mobile-nav-item" onClick={() => setMobileMenuOpen(false)}>Live Demo</a>
+              <a href="#how-it-works" className="mobile-nav-item" onClick={() => setMobileMenuOpen(false)}>Workflow</a>
+              <a href="#pricing" className="mobile-nav-item" onClick={() => setMobileMenuOpen(false)}>Pricing</a>
+              <div className="mobile-drawer-actions">
+                <button className="marketeam-login-link" onClick={openModal}>Log In</button>
+                <div className="btn-border-wrap">
+                  <button className="btn-join-now" onClick={openModal}>Join Now</button>
+                </div>
               </div>
             </div>
-          </div>
-        </section>
+          )}
 
-        {/* Continuous Right-to-Left Infinite Marquee Partner Logos Bar */}
-        <section className="marquee-section">
-          <MarqueePartnerLogos />
-        </section>
+          {/* Main Hero Container */}
+          <section className="marketeam-hero-main">
+            {/* Hero Left */}
+            <div className="marketeam-hero-left">
+              <TypewriterHeading
+                text="Real-Time Collaborative Code Editor for Dev Teams, Code on One Shared Codebase Live"
+                darkCharCount={53}
+                typingSpeed={35}
+                startDelay={400}
+              />
+
+              <div className="hero-cta-group">
+                <div className="hero-btn-row">
+                  <div className="btn-border-wrap start-btn-wrap">
+                    <button className="btn-start-project" onClick={openModal}>
+                      <span>Start Live Coding</span>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="9 18 15 12 9 6" />
+                      </svg>
+                    </button>
+                  </div>
+
+                  {/* Zeesu Portfolio Cursor Badge */}
+                  <a
+                    href="http://zeesu-royalist.vercel.app/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="david-cursor-badge"
+                    title="Visit Zeesu's Portfolio"
+                  >
+                    <span className="david-tag-label">Zeesu Royalist</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            {/* Hero Right: 4 Concentric Orbit Circles Visualization */}
+            <div className="marketeam-hero-right">
+              <div className="marketeam-circles-container">
+                {/* 4 Concentric Perfectly Round Circles */}
+                <div className="orbit-full-circle ring-diam-353"></div>
+                <div className="orbit-full-circle ring-diam-501"></div>
+                <div className="orbit-full-circle ring-diam-649"></div>
+                <div className="orbit-full-circle ring-diam-797"></div>
+
+                {/* Center Circle Stat: Count-up "20k+" Developers */}
+                <div className="marketeam-center-stat">
+                  <div className="center-stat-number">{useCountUp(20, 2000, 1200)}k+</div>
+                  <div className="center-stat-label">Developers</div>
+                </div>
+
+                {/* Orbit 1 Avatars Spin Layer (353px, counter-clockwise 30s) */}
+                <div className="orbit-spin-layer orbit-spin-layer-1">
+                  {ORBIT_AVATARS.filter((a) => a.orbit === 1).map((avatar, idx) => (
+                    <div
+                      key={`orb1-${idx}`}
+                      className="orbit-avatar-anchor"
+                      style={{
+                        transform: `translate(-50%, -50%) rotate(${avatar.angle}deg) translate(${avatar.radius}px) rotate(-${avatar.angle}deg)`,
+                      }}
+                    >
+                      <div className="orbit-avatar-counter-spin-30">
+                        <div
+                          className="orbit-avatar-box"
+                          style={{
+                            width: `${avatar.size}px`,
+                            height: `${avatar.size}px`,
+                            borderRadius: avatar.borderRadius,
+                            boxShadow: `0 0 26px ${avatar.glow}`,
+                          }}
+                        >
+                          <img
+                            src={avatar.src}
+                            alt="Talent Specialist"
+                            className="orbit-avatar-img"
+                            style={{
+                              borderRadius: avatar.borderRadius,
+                              animationDelay: avatar.delay,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Orbit 2 Avatars Spin Layer (501px, clockwise 40s) */}
+                <div className="orbit-spin-layer orbit-spin-layer-2">
+                  {ORBIT_AVATARS.filter((a) => a.orbit === 2).map((avatar, idx) => (
+                    <div
+                      key={`orb2-${idx}`}
+                      className="orbit-avatar-anchor"
+                      style={{
+                        transform: `translate(-50%, -50%) rotate(${avatar.angle}deg) translate(${avatar.radius}px) rotate(-${avatar.angle}deg)`,
+                      }}
+                    >
+                      <div className="orbit-avatar-counter-spin-40">
+                        <div
+                          className="orbit-avatar-box"
+                          style={{
+                            width: `${avatar.size}px`,
+                            height: `${avatar.size}px`,
+                            borderRadius: avatar.borderRadius,
+                            boxShadow: `0 0 26px ${avatar.glow}`,
+                          }}
+                        >
+                          <img
+                            src={avatar.src}
+                            alt="Talent Specialist"
+                            className="orbit-avatar-img"
+                            style={{
+                              borderRadius: avatar.borderRadius,
+                              animationDelay: avatar.delay,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Orbit 3 Avatars Spin Layer (649px, clockwise 50s) */}
+                <div className="orbit-spin-layer orbit-spin-layer-3">
+                  {ORBIT_AVATARS.filter((a) => a.orbit === 3).map((avatar, idx) => (
+                    <div
+                      key={`orb3-${idx}`}
+                      className="orbit-avatar-anchor"
+                      style={{
+                        transform: `translate(-50%, -50%) rotate(${avatar.angle}deg) translate(${avatar.radius}px) rotate(-${avatar.angle}deg)`,
+                      }}
+                    >
+                      <div className="orbit-avatar-counter-spin-50">
+                        <div
+                          className="orbit-avatar-box"
+                          style={{
+                            width: `${avatar.size}px`,
+                            height: `${avatar.size}px`,
+                            borderRadius: avatar.borderRadius,
+                            boxShadow: `0 0 26px ${avatar.glow}`,
+                          }}
+                        >
+                          <img
+                            src={avatar.src}
+                            alt="Talent Specialist"
+                            className="orbit-avatar-img"
+                            style={{
+                              borderRadius: avatar.borderRadius,
+                              animationDelay: avatar.delay,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Orbit 4 Avatars Spin Layer (797px, counter-clockwise 60s) */}
+                <div className="orbit-spin-layer orbit-spin-layer-4">
+                  {ORBIT_AVATARS.filter((a) => a.orbit === 4).map((avatar, idx) => (
+                    <div
+                      key={`orb4-${idx}`}
+                      className="orbit-avatar-anchor"
+                      style={{
+                        transform: `translate(-50%, -50%) rotate(${avatar.angle}deg) translate(${avatar.radius}px) rotate(-${avatar.angle}deg)`,
+                      }}
+                    >
+                      <div className="orbit-avatar-counter-spin-60">
+                        <div
+                          className="orbit-avatar-box"
+                          style={{
+                            width: `${avatar.size}px`,
+                            height: `${avatar.size}px`,
+                            borderRadius: avatar.borderRadius,
+                            boxShadow: `0 0 26px ${avatar.glow}`,
+                          }}
+                        >
+                          <img
+                            src={avatar.src}
+                            alt="Talent Specialist"
+                            className="orbit-avatar-img"
+                            style={{
+                              borderRadius: avatar.borderRadius,
+                              animationDelay: avatar.delay,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Bottom Logo Ticker Strip */}
+          <footer className="marketeam-ticker-section">
+            <MarketeamLogoTicker />
+          </footer>
+        </div>
 
         {/* Comprehensive Landing Page Section 1: Features Grid */}
         <section id="features" className="landing-section">
@@ -960,44 +1307,153 @@ function App() {
           </div>
         </section>
 
-        {/* Comprehensive Footer */}
+        {/* Comprehensive Footer Matching Reference Design */}
         <footer className="landing-footer-v2">
-          <div className="footer-top">
-            <div className="footer-brand">
-              <Icon.BrandLogo />
-              <span className="brand-title" style={{color: "white"}}>ZeesCode</span>
-              <p className="footer-desc">The next-generation collaborative browser code editor for modern engineering teams.</p>
+          {/* Top Section: Brand Overview + Newsletter Subscription */}
+          <div className="footer-header-section">
+            <div className="footer-brand-block">
+              <div className="footer-logo-row">
+                <Icon.BrandLogo width="36" height="36" />
+                <span className="footer-brand-title">ZeesCODE</span>
+              </div>
+              <p className="footer-brand-desc">
+                ZeesCode is a modern collaborative real-time code editor focused on building powerful developer experiences through live multi-user editing, seamless workspace synchronization, and instant code execution.
+              </p>
             </div>
 
-            <div className="footer-links-group">
-              <div className="footer-col">
-                <h4>Product</h4>
-                <a href="#features">Features</a>
-                <a href="#demo">Live Demo</a>
-                <a href="#how-it-works">Workflow</a>
-                <a href="#pricing">Pricing</a>
-              </div>
-              <div className="footer-col">
-                <h4>Resources</h4>
-                <a href="#">Documentation</a>
-                <a href="#">CRDT Engine</a>
-                <a href="#">VS Code Theme</a>
-                <a href="#">API Status</a>
-              </div>
-              <div className="footer-col">
-                <h4>Company</h4>
-                <a href="#">About Us</a>
-                <a href="#">Careers</a>
-                <a href="#">Blog</a>
-                <a href="#">Contact</a>
+            <div className="footer-newsletter-block">
+              <h3 className="newsletter-title">Subscribe to Our Newsletter</h3>
+              <form
+                className="newsletter-pill-form"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (newsletterEmail.trim()) {
+                    setToast({ visible: true, message: "Thank you for subscribing to ZeesCode newsletter!", type: "success" });
+                    setTimeout(() => setToast({ visible: false, message: "", type: "info" }), 4000);
+                    setNewsletterEmail("");
+                  }
+                }}
+              >
+                <input
+                  type="email"
+                  className="newsletter-input"
+                  placeholder="Enter your email"
+                  value={newsletterEmail}
+                  onChange={(e) => setNewsletterEmail(e.target.value)}
+                  required
+                />
+                <button type="submit" className="newsletter-submit-btn">
+                  <span>Subscribe</span>
+                  <ArrowUpRight size={16} />
+                </button>
+              </form>
+              <p className="newsletter-disclaimer">No spam. Just great content.</p>
+            </div>
+          </div>
+
+          {/* 6-Column Navigation & Contact Grid */}
+          <div className="footer-columns-grid">
+            <div className="footer-column">
+              <h4 className="footer-col-heading">Main Pages</h4>
+              <ul className="footer-link-list">
+                <li><a href="#features" onClick={() => openModal()}>About</a></li>
+                <li><a href="#demo" onClick={() => openModal()}>Work</a></li>
+                <li><a href="#features">Services</a></li>
+                <li><a href="#how-it-works" onClick={() => openModal()}>Blog</a></li>
+                <li><a href="mailto:help@zeesco.de">Contact</a></li>
+              </ul>
+            </div>
+
+            <div className="footer-column">
+              <h4 className="footer-col-heading">CMS Pages</h4>
+              <ul className="footer-link-list">
+                <li><a href="#demo" onClick={() => openModal()}>Work Details</a></li>
+                <li><a href="#demo" onClick={() => openModal()}>Blog Details</a></li>
+                <li><a href="#demo" onClick={() => openModal()}>Live Session</a></li>
+                <li><a href="#demo" onClick={() => openModal()}>Templates</a></li>
+              </ul>
+            </div>
+
+            <div className="footer-column footer-utility-col">
+              <h4 className="footer-col-heading">Utility Pages</h4>
+              <ul className="footer-link-list">
+                <li><a href="#demo" onClick={() => openModal()}>404</a></li>
+                <li><a href="#pricing" onClick={() => openModal()}>Coming Soon</a></li>
+                <li><a href="#features" onClick={() => openModal()}>Documentation</a></li>
+                <li><a href="#status" onClick={() => openModal()}>System Status</a></li>
+              </ul>
+            </div>
+
+            <div className="footer-column">
+              <h4 className="footer-col-heading">Legal</h4>
+              <ul className="footer-link-list">
+                <li><a href="#privacy" onClick={() => openModal()}>Privacy Policy</a></li>
+                <li><a href="#terms" onClick={() => openModal()}>Terms & Conditions</a></li>
+                <li><a href="#security" onClick={() => openModal()}>Security Protocol</a></li>
+                <li><a href="#cookies" onClick={() => openModal()}>Cookie Settings</a></li>
+              </ul>
+            </div>
+
+            <div className="footer-column">
+              <h4 className="footer-col-heading">Social Links</h4>
+              <ul className="footer-link-list">
+                <li><a href="https://github.com/zeesuroyalist" target="_blank" rel="noopener noreferrer">GitHub</a></li>
+                <li><a href="https://twitter.com" target="_blank" rel="noopener noreferrer">Twitter / X</a></li>
+                <li><a href="https://linkedin.com" target="_blank" rel="noopener noreferrer">LinkedIn</a></li>
+                <li><a href="https://instagram.com" target="_blank" rel="noopener noreferrer">Instagram</a></li>
+                <li><a href="https://facebook.com" target="_blank" rel="noopener noreferrer">Facebook</a></li>
+              </ul>
+            </div>
+
+            <div className="footer-column footer-contact-col">
+              <h4 className="footer-col-heading">Have a question?</h4>
+              <div className="footer-contact-items">
+                <div className="footer-contact-item">
+                  <div className="contact-item-icon">
+                    <Phone size={15} />
+                  </div>
+                  <div className="contact-item-text">
+                    <span className="contact-main-info">+91 (0) 800-ZEESCODE</span>
+                    <span className="contact-sub-info">Monday to Friday, 9am to 5pm</span>
+                  </div>
+                </div>
+
+                <div className="footer-contact-item">
+                  <div className="contact-item-icon">
+                    <MessageSquare size={15} />
+                  </div>
+                  <div className="contact-item-text">
+                    <a href="mailto:help@zeesco.de" className="contact-main-info">help@zeesco.de</a>
+                    <span className="contact-sub-info">We aim to reply in 24 hours</span>
+                  </div>
+                </div>
+
+                <div className="footer-contact-item">
+                  <div className="contact-item-icon">
+                    <Mail size={15} />
+                  </div>
+                  <div className="contact-item-text">
+                    <a href="mailto:press@zeesco.de" className="contact-main-info">press@zeesco.de</a>
+                    <span className="contact-sub-info">Press and media inquiries</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="footer-bottom">
-            <p>© {new Date().getFullYear()} ZeesCode • Designed & Built by Zeesu Royalist . All rights reserved.</p>
+          {/* Giant Watermark Brand Text at Bottom ("ZEESCODE") */}
+          <div className="footer-giant-watermark-wrap">
+            <h1 className="footer-giant-watermark-text">Zeesu.Royalist</h1>
+          </div>
+
+          {/* Bottom Bar: Copyright & System Status */}
+          <div className="footer-bottom-bar">
+            <div className="footer-bottom-badge">
+              <span className="footer-mini-badge">Z</span>
+              <span>© {new Date().getFullYear()} ZeesCode • Designed & Built by Zeesu Royalist. All rights reserved.</span>
+            </div>
             <div className="footer-status">
-              <span>All Systems Operational</span>
+              <span>Zeesu Royalist</span>
             </div>
           </div>
         </footer>
@@ -1139,9 +1595,14 @@ function App() {
                 </button>
               )
             })()}
-            <a href="/" className="activity-item" title="Logout">
+            <button
+              onClick={handleLogout}
+              className="activity-item"
+              title="Logout"
+              style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
               <LogOut className="w-4 h-4 text-purple-300 hover:text-white transition-colors" />
-            </a>
+            </button>
           </div>
         </nav>
 
